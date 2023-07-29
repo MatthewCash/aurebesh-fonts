@@ -6,23 +6,22 @@
         flake-utils.url = "github:numtide/flake-utils";
         
         aurabesh = {
-            url = "https://aurekfonts.github.io/Aurabesh/AURABESH.ttf";
+            url = "https://github.com/AurekFonts/AurekFonts.github.io/raw/master/AurebeshAF/AurebeshAF-Legends.otf";
             flake = false;
         };
     };
 
     outputs = inputs @ { self, nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
-        let pkgs = nixpkgs.legacyPackages.${system}; in rec {
+        let pkgs = nixpkgs.legacyPackages.${system}; in {
             defaultPackage = pkgs.stdenvNoCC.mkDerivation {
                 name = "aurebesh-font";
                 src = inputs.aurabesh;
                 dontUnpack = true;
                 dontConfigure = true;
                 installPhase = ''
-                    cp $src aurebesh.ttf
-                    local out_ttf=$out/share/fonts/truetype
-                    install -m444 -Dt $out_ttf aurebesh.ttf
+                    local out_ttf=$out/share/fonts/opentype
+                    install -m444 -D $src $out_ttf/aurebesh.otf
                 '';
             };
         }
