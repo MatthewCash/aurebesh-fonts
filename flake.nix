@@ -1,29 +1,32 @@
 {
     description = "Aurebesh Fonts";
 
-    inputs = {
-        nixpkgs.url = "nixpkgs/nixos-unstable";
-        flake-utils.url = "github:numtide/flake-utils";
-        
-        aurabesh = {
-            url = "https://github.com/AurekFonts/AurekFonts.github.io/raw/master/AurebeshAF/AurebeshAF-Legends.otf";
-            flake = false;
-        };
-    };
+    inputs.nixpkgs.url = "nixpkgs/nixos-unstable";
 
-    outputs = inputs @ { self, nixpkgs, flake-utils, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
-        let pkgs = nixpkgs.legacyPackages.${system}; in {
-            defaultPackage = pkgs.stdenvNoCC.mkDerivation {
+    outputs = { nixpkgs, ... }:
+    let
+        forAllSystems = nixpkgs.lib.genAttrs nixpkgs.lib.systems.flakeExposed;
+        packageFor = system:
+            let pkgs = nixpkgs.legacyPackages.${system}; in
+            pkgs.stdenvNoCC.mkDerivation {
                 name = "aurebesh-font";
-                src = inputs.aurabesh;
-                dontUnpack = true;
+                src = builtins.path {
+                    path = ./.;
+                    name = "aurebesh-fonts-source";
+                };
+                nativeBuildInputs = [ pkgs.fontforge ];
                 dontConfigure = true;
                 installPhase = ''
                     local out_ttf=$out/share/fonts/opentype
-                    install -m444 -D $src $out_ttf/aurebesh.otf
+                    mkdir -p $out_ttf
+                    fontforge -script scripts/mirror-capitals.py
+                    install -m 0644 aurebesh.otf $out_ttf/aurebesh.otf
                 '';
             };
-        }
-    );
+    in {
+        packages = forAllSystems (system: {
+            default = packageFor system;
+        });
+        defaultPackage = forAllSystems packageFor;
+    };
 }
